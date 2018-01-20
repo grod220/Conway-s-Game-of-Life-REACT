@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import "./App.css";
 
-const generateBoard = (width = 40, height = 40) => {
+const generateCleanBoard = (width = 70, height = 35) => {
   const boardArr = [];
   for (let i = 0; i < height; i++) {
     boardArr[i] = [];
@@ -15,42 +15,75 @@ const generateBoard = (width = 40, height = 40) => {
 class App extends Component {
   constructor(props) {
     super(props);
-    this.state = { board: generateBoard() };
+    this.state = { board: generateCleanBoard() };
   }
 
-  clickCell = (row, col) => {
+  changeCellState = (row, col) => {
     const boardCopy = JSON.parse(JSON.stringify(this.state.board));
     boardCopy[row][col] = boardCopy[row][col] ? 0 : 1;
     this.setState({ board: boardCopy });
   };
 
-  evolve = () => {
-    return 1;
-  };
-
-  clickButton = () => {
+  startGame = () => {
     setInterval(() => {
       const boardCopy = JSON.parse(JSON.stringify(this.state.board));
       this.state.board.forEach((row, rowIndex) => {
         return row.forEach((cellValue, colIndex) => {
-          if (cellValue) {
-            boardCopy[rowIndex][colIndex] = this.evolve(
-              this.state.board,
-              rowIndex,
-              colIndex
-            );
-          }
+          boardCopy[rowIndex][colIndex] = this.nextCellState(
+            this.state.board,
+            rowIndex,
+            colIndex
+          );
           return cellValue;
         });
       });
       this.setState({ board: boardCopy });
-    }, 2000);
+    }, 120);
+  };
+
+  nextCellState = (board, row, col) => {
+    const state = board[row][col];
+    const neighborCount = this.countNeighbors(board, row, col);
+    if (neighborCount < 2 || neighborCount > 3) return 0;
+    if (state && neighborCount === 2) return 1;
+    if (neighborCount === 3) return 1;
+  };
+
+  countNeighbors = (board, row, col) => {
+    let count = 0;
+    if (board[row][col + 1]) count++;
+    if (board[row][col - 1]) count++;
+    if (board[row + 1]) {
+      if (board[row + 1][col - 1]) count++;
+      if (board[row + 1][col]) count++;
+      if (board[row + 1][col + 1]) count++;
+    }
+    if (board[row - 1]) {
+      if (board[row - 1][col - 1]) count++;
+      if (board[row - 1][col]) count++;
+      if (board[row - 1][col + 1]) count++;
+    }
+    return count;
+  };
+
+  randomizeCells = () => {
+    const boardCopy = generateCleanBoard();
+    boardCopy.forEach((row, rowIndex) => {
+      return row.forEach((cellValue, colIndex) => {
+        let chanceOfActive = Math.random() > 0.8;
+        if (chanceOfActive) {
+          boardCopy[rowIndex][colIndex] = 1;
+        }
+      });
+    });
+    this.setState({ board: boardCopy });
   };
 
   render() {
     return (
       <div>
-        <button>Start Game</button>
+        <button onClick={this.startGame}>Start Game</button>
+        <button onClick={this.randomizeCells}>Randomize</button>
         <div className="board">
           {this.state.board.map((row, rowIndex) => {
             return (
@@ -60,7 +93,7 @@ class App extends Component {
                     <div
                       className={"cell " + (cellVal ? "active" : "inactive")}
                       key={colIndex}
-                      onClick={() => this.clickCell(rowIndex, colIndex)}
+                      onClick={() => this.changeCellState(rowIndex, colIndex)}
                     />
                   );
                 })}
